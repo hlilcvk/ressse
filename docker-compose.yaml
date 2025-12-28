@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      # Coolify PostgreSQL - Public Access
+      MASTER_DB_HOST: 72.62.90.122
+      MASTER_DB_PORT: 5433
+      MASTER_DB_NAME: randevu_master
+      MASTER_DB_USER: postgres
+      MASTER_DB_PASSWORD: axz1oYfYKmoJooNR45QYE8Zqxd7s4uwUoU5e3ZZj1Psh6iNjlPWH3aRQE9Az1KPn
+      DB_HOST: 72.62.90.122
+      DB_PORT: 5433
+      DB_USER: postgres
+      DB_PASSWORD: axz1oYfYKmoJooNR45QYE8Zqxd7s4uwUoU5e3ZZj1Psh6iNjlPWH3aRQE9Az1KPn
+      DB_NAME: randevu_master
+      JWT_SECRET: ${JWT_SECRET:-super-gizli-jwt-anahtar-2024-DEGISTIR}
+      JWT_EXPIRES_IN: 8h
+      PORT: 3000
+      NODE_ENV: production
+    expose:
+      - "80"
