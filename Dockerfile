@@ -1,5 +1,6 @@
 FROM node:18-alpine
 
+ARG CACHEBUST=1
 # Nginx yükle
 RUN apk add --no-cache nginx postgresql-client supervisor
 
