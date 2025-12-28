@@ -757,8 +757,8 @@ function renderAppointments() {
         card.innerHTML = `
             <div class="appointment-title">${apt.musteri_adi}</div>
             <div class="appointment-details">
-                <i class="bi bi-telephone"></i>
-                ${apt.telefon_no || '-'}
+                <i class="bi bi-scissors"></i>
+                ${apt.islem_turu || 'İşlem belirtilmemiş'}
             </div>
             <div class="appointment-time">
                 ${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} - 
