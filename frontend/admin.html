@@ -388,11 +388,12 @@
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-building-add"></i> Yeni İşletme Ekle</h5>
+                    <h5 class="modal-title" id="addModalTitle"><i class="bi bi-building-add"></i> Yeni İşletme Ekle</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="addForm">
+                        <input type="hidden" id="editId">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">İşletme ID *</label>
@@ -411,9 +412,10 @@
                                        placeholder="Örn: Ahmet's Berber Salonu">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Şifre *</label>
-                                <input type="password" class="form-control" id="sifre" required 
+                                <label class="form-label">Şifre <span id="sifreLabel">*</span></label>
+                                <input type="password" class="form-control" id="sifre" 
                                        placeholder="En az 6 karakter">
+                                <small class="text-muted" id="sifreHint">Boş bırakırsanız değişmez</small>
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Randevu Tablo Adı *</label>
@@ -442,7 +444,7 @@
                                 </div>
                             </div>
                             <div class="col-12">
-                                <button type="submit" class="btn-save">
+                                <button type="submit" class="btn-save" id="submitBtn">
                                     <i class="bi bi-check-lg"></i> İşletme Oluştur
                                 </button>
                             </div>
@@ -520,6 +522,9 @@
                                 <i class="bi bi-building"></i>
                             </div>
                             <div class="business-actions">
+                                <button class="btn-icon" onclick="editBusiness(${business.id})" title="Düzenle">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
                                 <button class="btn-icon danger" onclick="deleteBusiness(${business.id}, '${business.ad_soyad.replace(/'/g, "\\'")}')">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -572,7 +577,45 @@
         function openAddModal() {
             uzmanlarArray = [];
             document.getElementById('addForm').reset();
+            document.getElementById('editId').value = '';
             document.getElementById('uzmanlarList').innerHTML = '';
+            document.getElementById('addModalTitle').innerHTML = '<i class="bi bi-building-add"></i> Yeni İşletme Ekle';
+            document.getElementById('submitBtn').innerHTML = '<i class="bi bi-check-lg"></i> İşletme Oluştur';
+            document.getElementById('sifre').required = true;
+            document.getElementById('sifreLabel').textContent = '*';
+            document.getElementById('sifreHint').textContent = 'En az 6 karakter';
+            currentModal = new bootstrap.Modal(document.getElementById('addModal'));
+            currentModal.show();
+        }
+
+        // İşletme düzenle
+        async function editBusiness(id) {
+            const data = await apiRequest('/admin/isletmeler');
+            if (!data || !data.success) return;
+            
+            const business = data.data.find(b => b.id === id);
+            if (!business) return;
+            
+            // Uzmanları yükle
+            const uzmanData = await apiRequest(`/appointments/uzmanlar?isletme=${business.isletme_id}`);
+            uzmanlarArray = uzmanData && uzmanData.success ? uzmanData.data.map(u => u.oda_adi) : [];
+            
+            // Formu doldur
+            document.getElementById('editId').value = id;
+            document.getElementById('isletmeId').value = business.isletme_id;
+            document.getElementById('kullaniciAdi').value = business.kullanici_adi;
+            document.getElementById('adSoyad').value = business.ad_soyad;
+            document.getElementById('tabloAdi').value = business.bagli_tablo_adi;
+            document.getElementById('sifre').value = '';
+            document.getElementById('sifre').required = false;
+            
+            updateUzmanlarList();
+            
+            document.getElementById('addModalTitle').innerHTML = '<i class="bi bi-pencil"></i> İşletme Düzenle';
+            document.getElementById('submitBtn').innerHTML = '<i class="bi bi-check-lg"></i> Değişiklikleri Kaydet';
+            document.getElementById('sifreLabel').textContent = '(İsteğe bağlı)';
+            document.getElementById('sifreHint').textContent = 'Boş bırakırsanız değişmez';
+            
             currentModal = new bootstrap.Modal(document.getElementById('addModal'));
             currentModal.show();
         }
@@ -630,18 +673,27 @@
                 return;
             }
 
+            const editId = document.getElementById('editId').value;
+            const sifre = document.getElementById('sifre').value;
+            
             const formData = {
                 isletme_id: document.getElementById('isletmeId').value.trim(),
                 kullanici_adi: document.getElementById('kullaniciAdi').value.trim(),
                 ad_soyad: document.getElementById('adSoyad').value.trim(),
-                sifre: document.getElementById('sifre').value,
                 bagli_tablo_adi: document.getElementById('tabloAdi').value.trim(),
                 uzmanlar: uzmanlarArray
             };
 
-            // Validasyon
-            if (formData.sifre.length < 6) {
-                alert('⚠️ Şifre en az 6 karakter olmalıdır');
+            // Şifre sadece doluysa ekle
+            if (sifre) {
+                if (sifre.length < 6) {
+                    alert('⚠️ Şifre en az 6 karakter olmalıdır');
+                    return;
+                }
+                formData.sifre = sifre;
+            } else if (!editId) {
+                // Yeni işletme için şifre zorunlu
+                alert('⚠️ Şifre gereklidir');
                 return;
             }
 
@@ -653,12 +705,22 @@
             const submitBtn = e.target.querySelector('button[type="submit"]');
             const originalHTML = submitBtn.innerHTML;
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Oluşturuluyor...';
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>' + (editId ? 'Kaydediliyor...' : 'Oluşturuluyor...');
 
-            const result = await apiRequest('/admin/isletme', {
-                method: 'POST',
-                body: JSON.stringify(formData)
-            });
+            let result;
+            if (editId) {
+                // Güncelleme
+                result = await apiRequest(`/admin/isletme/${editId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(formData)
+                });
+            } else {
+                // Yeni ekleme
+                result = await apiRequest('/admin/isletme', {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                });
+            }
 
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalHTML;
@@ -667,19 +729,22 @@
                 currentModal.hide();
                 loadBusinesses();
                 
-                // Başarı mesajı
-                const successMsg = `
-                    ✅ İşletme başarıyla oluşturuldu!
-                    
-                    📋 Giriş Bilgileri:
-                    Kullanıcı Adı: ${formData.kullanici_adi}
-                    Şifre: ${formData.sifre}
-                    
-                    Bu bilgileri işletme sahibine iletin.
-                `;
-                alert(successMsg);
+                if (editId) {
+                    alert('✅ İşletme başarıyla güncellendi!');
+                } else {
+                    const successMsg = `
+                        ✅ İşletme başarıyla oluşturuldu!
+                        
+                        📋 Giriş Bilgileri:
+                        Kullanıcı Adı: ${formData.kullanici_adi}
+                        Şifre: ${formData.sifre}
+                        
+                        Bu bilgileri işletme sahibine iletin.
+                    `;
+                    alert(successMsg);
+                }
             } else {
-                alert('❌ Hata: ' + (result?.message || 'İşletme oluşturulamadı'));
+                alert('❌ Hata: ' + (result?.message || (editId ? 'Güncellenemedi' : 'İşletme oluşturulamadı')));
             }
         });
 
