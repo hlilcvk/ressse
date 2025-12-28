@@ -19,6 +19,7 @@
         .navbar-brand {
             font-weight: 700;
             color: #667eea !important;
+            font-size: 1.3rem;
         }
         .card {
             border: none;
@@ -29,7 +30,7 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-radius: 15px 15px 0 0 !important;
-            padding: 1rem 1.5rem;
+            padding: 1.2rem 1.5rem;
         }
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -37,6 +38,7 @@
         }
         .btn-primary:hover {
             opacity: 0.9;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         .table {
             margin-bottom: 0;
@@ -47,6 +49,11 @@
         }
         .badge {
             padding: 0.5rem 0.8rem;
+            font-size: 0.85rem;
+        }
+        .form-label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
         }
     </style>
 </head>
@@ -57,8 +64,8 @@
                 <i class="bi bi-shield-check"></i> Admin Panel
             </a>
             <div class="d-flex align-items-center">
-                <span class="me-3" id="userName"></span>
-                <button class="btn btn-outline-danger btn-sm" onclick="logout()">
+                <span class="me-3 fw-bold" id="userName"></span>
+                <button class="btn btn-outline-danger btn-sm" onclick="doLogout()">
                     <i class="bi bi-box-arrow-right"></i> Çıkış
                 </button>
             </div>
@@ -77,8 +84,8 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
                                     <tr>
                                         <th>İşletme ID</th>
                                         <th>Kullanıcı Adı</th>
@@ -86,13 +93,16 @@
                                         <th>Tablo Adı</th>
                                         <th>Uzman Sayısı</th>
                                         <th>Kayıt Tarihi</th>
-                                        <th>İşlem</th>
+                                        <th width="100">İşlem</th>
                                     </tr>
                                 </thead>
                                 <tbody id="isletmelerTable">
                                     <tr>
-                                        <td colspan="7" class="text-center">
-                                            <div class="spinner-border text-primary" role="status"></div>
+                                        <td colspan="7" class="text-center py-4">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Yükleniyor...</span>
+                                            </div>
+                                            <p class="mt-2 text-muted">İşletmeler yükleniyor...</p>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -109,7 +119,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Yeni İşletme Ekle</h5>
+                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Yeni İşletme Ekle</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -119,7 +129,7 @@
                                 <label class="form-label">İşletme ID *</label>
                                 <input type="text" class="form-control" id="isletmeId" required 
                                        placeholder="Örn: BERBER_001">
-                                <small class="text-muted">Benzersiz olmalı, boşluk yok</small>
+                                <small class="text-muted">Benzersiz olmalı, boşluk kullanmayın</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Kullanıcı Adı *</label>
@@ -145,29 +155,29 @@
                             <label class="form-label">Tablo Adı *</label>
                             <input type="text" class="form-control" id="tabloAdi" required 
                                    placeholder="Örn: berber_randevular">
-                            <small class="text-muted">Küçük harf, alt çizgi kullanın. Örn: berber_randevular</small>
+                            <small class="text-muted">Sadece küçük harf, rakam ve alt çizgi (_) kullanın</small>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Uzmanlar/Odalar *</label>
                             <div class="input-group mb-2">
                                 <input type="text" class="form-control" id="uzmanInput" 
-                                       placeholder="Uzman adı girin...">
+                                       placeholder="Uzman adı girin..." 
+                                       onkeypress="if(event.key==='Enter'){event.preventDefault();addUzman();}">
                                 <button type="button" class="btn btn-outline-primary" onclick="addUzman()">
                                     <i class="bi bi-plus-lg"></i> Ekle
                                 </button>
                             </div>
                             <div id="uzmanlarList" class="d-flex flex-wrap gap-2 mt-2"></div>
-                            <small class="text-muted">En az 1 uzman ekleyin (Örn: Ahmet, Mehmet, Oda 1)</small>
+                            <small class="text-muted">En az 1 uzman ekleyin. Örn: Ahmet, Mehmet, Oda 1</small>
                         </div>
 
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle"></i> 
-                            <strong>Not:</strong> Database bilgileri otomatik ayarlanır. 
-                            Sadece tablo adı ve uzmanları belirleyin.
+                            <strong>Not:</strong> Database bilgileri otomatik olarak sisteme kayıtlı ayarlarla yapılandırılır.
                         </div>
 
-                        <div class="d-grid">
+                        <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="bi bi-check-lg"></i> İşletme Oluştur
                             </button>
@@ -179,6 +189,206 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/admin.js"></script>
+    <script>
+        const API_URL = '/api';
+        let uzmanlarArray = [];
+        let currentModal = null;
+
+        // Auth check
+        const token = localStorage.getItem('auth_token');
+        const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+
+        if (!token || !userData.is_super_admin) {
+            window.location.href = '/login.html';
+        }
+
+        document.getElementById('userName').textContent = userData.ad_soyad || userData.kullanici_adi;
+
+        function doLogout() {
+            localStorage.clear();
+            window.location.href = '/login.html';
+        }
+
+        // API helper
+        async function apiRequest(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                        ...options.headers
+                    }
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    alert('Oturum süreniz doldu');
+                    doLogout();
+                    return;
+                }
+
+                return response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                alert('Bağlantı hatası: ' + error.message);
+                return { success: false, message: error.message };
+            }
+        }
+
+        // İşletmeleri yükle
+        async function loadIsletmeler() {
+            const data = await apiRequest('/admin/isletmeler');
+            const tbody = document.getElementById('isletmelerTable');
+            
+            if (data && data.success && data.data.length > 0) {
+                tbody.innerHTML = data.data.map(i => `
+                    <tr>
+                        <td><strong class="text-primary">${i.isletme_id}</strong></td>
+                        <td>${i.kullanici_adi}</td>
+                        <td>${i.ad_soyad}</td>
+                        <td><code class="bg-light px-2 py-1 rounded">${i.bagli_tablo_adi}</code></td>
+                        <td><span class="badge ${i.uzman_sayisi > 0 ? 'bg-success' : 'bg-warning'}">${i.uzman_sayisi || 0} uzman</span></td>
+                        <td>${new Date(i.created_at).toLocaleDateString('tr-TR', {day: '2-digit', month: '2-digit', year: 'numeric'})}</td>
+                        <td>
+                            <button class="btn btn-sm btn-danger" onclick="deleteIsletme(${i.id}, '${i.ad_soyad.replace(/'/g, "\\'")}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                            <p class="mt-2">Henüz işletme eklenmemiş</p>
+                            <button class="btn btn-sm btn-primary" onclick="openAddModal()">
+                                <i class="bi bi-plus-lg"></i> İlk İşletmeyi Ekle
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Modal aç
+        function openAddModal() {
+            uzmanlarArray = [];
+            document.getElementById('addForm').reset();
+            document.getElementById('uzmanlarList').innerHTML = '';
+            currentModal = new bootstrap.Modal(document.getElementById('addModal'));
+            currentModal.show();
+        }
+
+        // Uzman ekle
+        function addUzman() {
+            const input = document.getElementById('uzmanInput');
+            const uzman = input.value.trim();
+            
+            if (!uzman) {
+                alert('Uzman adı boş olamaz');
+                return;
+            }
+            
+            if (uzmanlarArray.includes(uzman)) {
+                alert('Bu uzman zaten eklendi');
+                return;
+            }
+            
+            uzmanlarArray.push(uzman);
+            updateUzmanlarList();
+            input.value = '';
+            input.focus();
+        }
+
+        // Uzman listesini güncelle
+        function updateUzmanlarList() {
+            const list = document.getElementById('uzmanlarList');
+            list.innerHTML = uzmanlarArray.map((u, i) => `
+                <span class="badge bg-primary">
+                    ${u}
+                    <i class="bi bi-x-circle ms-1" style="cursor:pointer;" onclick="removeUzman(${i})"></i>
+                </span>
+            `).join('');
+        }
+
+        // Uzman çıkar
+        function removeUzman(index) {
+            uzmanlarArray.splice(index, 1);
+            updateUzmanlarList();
+        }
+
+        // Form submit
+        document.getElementById('addForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (uzmanlarArray.length === 0) {
+                alert('En az 1 uzman eklemelisiniz!');
+                document.getElementById('uzmanInput').focus();
+                return;
+            }
+
+            const formData = {
+                isletme_id: document.getElementById('isletmeId').value.trim(),
+                kullanici_adi: document.getElementById('kullaniciAdi').value.trim(),
+                ad_soyad: document.getElementById('adSoyad').value.trim(),
+                sifre: document.getElementById('sifre').value,
+                bagli_tablo_adi: document.getElementById('tabloAdi').value.trim(),
+                uzmanlar: uzmanlarArray
+            };
+
+            // Validasyon
+            if (formData.sifre.length < 6) {
+                alert('Şifre en az 6 karakter olmalıdır');
+                return;
+            }
+
+            if (!/^[a-z0-9_]+$/.test(formData.bagli_tablo_adi)) {
+                alert('Tablo adı sadece küçük harf, rakam ve alt çizgi (_) içerebilir');
+                return;
+            }
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Oluşturuluyor...';
+
+            const result = await apiRequest('/admin/isletme', {
+                method: 'POST',
+                body: JSON.stringify(formData)
+            });
+
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> İşletme Oluştur';
+
+            if (result && result.success) {
+                currentModal.hide();
+                loadIsletmeler();
+                alert('✅ İşletme başarıyla oluşturuldu!\n\nKullanıcı Adı: ' + formData.kullanici_adi + '\nŞifre: ' + formData.sifre);
+            } else {
+                alert('❌ Hata: ' + (result?.message || 'İşletme oluşturulamadı'));
+            }
+        });
+
+        // İşletme sil
+        async function deleteIsletme(id, name) {
+            if (!confirm(`"${name}" işletmesini silmek istediğinizden emin misiniz?\n\n⚠️ Tüm randevu verileri kalıcı olarak silinecektir!`)) {
+                return;
+            }
+
+            const result = await apiRequest(`/admin/isletme/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (result && result.success) {
+                loadIsletmeler();
+                alert('✅ İşletme silindi');
+            } else {
+                alert('❌ Hata: ' + (result?.message || 'Silinemedi'));
+            }
+        }
+
+        // Sayfa yüklendiğinde
+        loadIsletmeler();
+    </script>
 </body>
 </html>
