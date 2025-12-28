@@ -3,81 +3,457 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Randevu Yönetim</title>
+    <title>Randevu Yönetim - Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            background: #f5f7fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
-        .navbar {
+
+        .header {
             background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 1rem 0;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .navbar-brand {
-            font-weight: 700;
-            color: #667eea !important;
-            font-size: 1.3rem;
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0;
         }
-        #calendar {
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .container-fluid {
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 2rem;
+        }
+
+        .calendar-section {
             background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-top: 20px;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         }
-        .fc-event {
-            cursor: pointer;
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .calendar-date {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .date-nav {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .date-nav button {
+            background: #f1f3f5;
             border: none;
-            padding: 2px 5px;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
+
+        .date-nav button:hover {
+            background: #e9ecef;
+        }
+
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: 0;
+        }
+
+        .time-labels {
+            padding-top: 20px;
+        }
+
+        .time-label {
+            height: 80px;
+            display: flex;
+            align-items: flex-start;
+            font-size: 0.85rem;
+            color: #868e96;
+            padding-right: 1rem;
+        }
+
+        .appointments-container {
+            display: grid;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .uzman-column {
+            min-height: 960px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 1rem;
+            position: relative;
+        }
+
+        .uzman-header {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            color: #495057;
+            text-align: center;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .time-grid {
+            position: relative;
+            height: 960px;
+        }
+
+        .time-slot {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 80px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .appointment-card {
+            position: absolute;
+            left: 4px;
+            right: 4px;
+            padding: 0.75rem;
+            border-radius: 10px;
+            cursor: move;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .appointment-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .appointment-card.color-1 { background: linear-gradient(135deg, #a8e6cf 0%, #dcedc1 100%); }
+        .appointment-card.color-2 { background: linear-gradient(135deg, #c7b3e5 0%, #e5c1e1 100%); }
+        .appointment-card.color-3 { background: linear-gradient(135deg, #ffd3b6 0%, #ffaaa5 100%); }
+        .appointment-card.color-4 { background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%); }
+        .appointment-card.color-5 { background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%); }
+
+        .appointment-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+            color: #2c3e50;
+        }
+
+        .appointment-details {
+            font-size: 0.8rem;
+            color: #5a6c7d;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .appointment-time {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            margin-top: 0.25rem;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .mini-calendar {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .mini-calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .mini-calendar-title {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .mini-calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.25rem;
+        }
+
+        .mini-calendar-day-header {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #868e96;
+            padding: 0.5rem 0;
+        }
+
+        .mini-calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mini-calendar-day:hover {
+            background: #f1f3f5;
+        }
+
+        .mini-calendar-day.today {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+
+        .mini-calendar-day.other-month {
+            color: #adb5bd;
+        }
+
+        .action-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .add-appointment-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .add-appointment-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .stats {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #667eea;
+        }
+
+        .btn-logout {
+            background: white;
+            border: 1px solid #e9ecef;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: #f8f9fa;
+        }
+
+        /* Modal Styles */
+        .modal-content {
+            border-radius: 16px;
+            border: none;
+        }
+
         .modal-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            border-radius: 16px 16px 0 0;
+            padding: 1.5rem;
         }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
+
+        .modal-body {
+            padding: 2rem;
         }
-        .btn-primary:hover {
-            opacity: 0.9;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
+
         .form-label {
             font-weight: 600;
             margin-bottom: 0.5rem;
+            color: #495057;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <i class="bi bi-calendar-check"></i> Randevu Yönetim
-            </a>
-            <div class="d-flex align-items-center">
-                <span class="me-3 fw-bold" id="userName"></span>
-                <button class="btn btn-outline-danger btn-sm" onclick="doLogout()">
-                    <i class="bi bi-box-arrow-right"></i> Çıkış
-                </button>
-            </div>
+    <div class="header">
+        <h1><i class="bi bi-calendar-event"></i> Randevu Yönetim</h1>
+        <div class="user-info">
+            <span id="userName" style="font-weight: 600;"></span>
+            <button class="btn-logout" onclick="doLogout()">
+                <i class="bi bi-box-arrow-right"></i> Çıkış
+            </button>
         </div>
-    </nav>
+    </div>
 
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-12">
-                <div id="calendar"></div>
+        <div class="main-layout">
+            <!-- Sol: Ana Takvim -->
+            <div class="calendar-section">
+                <div class="calendar-header">
+                    <div class="calendar-date" id="currentDate">Wednesday, July 2, 2025</div>
+                    <div class="date-nav">
+                        <button onclick="changeDate(-1)"><i class="bi bi-chevron-left"></i></button>
+                        <button onclick="changeDate(0)">Bugün</button>
+                        <button onclick="changeDate(1)"><i class="bi bi-chevron-right"></i></button>
+                    </div>
+                </div>
+
+                <div id="timelineContainer">
+                    <!-- Buraya timeline grid gelecek -->
+                </div>
+            </div>
+
+            <!-- Sağ: Mini Calendar + Actions -->
+            <div class="sidebar">
+                <div class="action-card">
+                    <button class="add-appointment-btn" onclick="openAddModal()">
+                        <i class="bi bi-plus-circle"></i> Yeni Randevu Ekle
+                    </button>
+                </div>
+
+                <div class="mini-calendar">
+                    <div class="mini-calendar-header">
+                        <button style="background: none; border: none; cursor: pointer;" onclick="changeMiniMonth(-1)">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <div class="mini-calendar-title" id="miniCalendarTitle">July 2025</div>
+                        <button style="background: none; border: none; cursor: pointer;" onclick="changeMiniMonth(1)">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="mini-calendar-grid" id="miniCalendarGrid">
+                        <!-- Mini calendar buraya gelecek -->
+                    </div>
+                </div>
+
+                <div class="action-card">
+                    <h6 style="margin-bottom: 1rem; font-weight: 600;">Bugünün Özeti</h6>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Toplam Randevu</span>
+                            <span class="stat-value" id="statTotal">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Aktif Uzman</span>
+                            <span class="stat-value" id="statUzman">0</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Randevu Modal -->
     <div class="modal fade" id="appointmentModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalTitle">Yeni Randevu</h5>
@@ -87,53 +463,45 @@
                     <form id="appointmentForm">
                         <input type="hidden" id="appointmentId">
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
+                        <div class="row g-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Müşteri Adı *</label>
                                 <input type="text" class="form-control" id="musteriAdi" required>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Telefon</label>
                                 <input type="tel" class="form-control" id="telefonNo" placeholder="05XX XXX XXXX">
                             </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6">
                                 <label class="form-label">İşlem Türü</label>
-                                <input type="text" class="form-control" id="islemTuru" placeholder="Örn: Saç Kesimi">
+                                <input type="text" class="form-control" id="islemTuru">
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Uzman/Oda *</label>
                                 <select class="form-select" id="uzman" required>
                                     <option value="">Seçiniz...</option>
                                 </select>
                             </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Başlangıç *</label>
                                 <input type="datetime-local" class="form-control" id="baslangicSaati" required>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Bitiş *</label>
                                 <input type="datetime-local" class="form-control" id="bitisSaati" required>
                             </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Notlar</label>
-                            <textarea class="form-control" id="notlar" rows="3"></textarea>
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-check-lg"></i> Kaydet
-                            </button>
-                            <button type="button" class="btn btn-outline-danger" id="deleteBtn" style="display:none;" onclick="deleteAppointment()">
-                                <i class="bi bi-trash"></i> Randevuyu Sil
-                            </button>
+                            <div class="col-12">
+                                <label class="form-label">Notlar</label>
+                                <textarea class="form-control" id="notlar" rows="2"></textarea>
+                            </div>
+                            <div class="col-12 d-grid gap-2">
+                                <button type="submit" class="btn-save">
+                                    <i class="bi bi-check-lg"></i> Kaydet
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" id="deleteBtn" style="display:none;" onclick="deleteAppointment()">
+                                    <i class="bi bi-trash"></i> Sil
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -142,276 +510,415 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
     <script>
-        // Logout fonksiyonu
-        function doLogout() {
-            localStorage.clear();
-            window.location.href = '/login.html';
-        }
+const API_URL = '/api';
+let currentDate = new Date();
+let uzmanlar = [];
+let appointments = [];
+let currentModal = null;
+let currentAppointmentId = null;
+let draggedElement = null;
 
-        const API_URL = '/api';
-        let calendar;
-        let currentAppointmentId = null;
-        let uzmanlar = [];
-        let currentModal = null;
+// Auth check
+const token = localStorage.getItem('auth_token');
+const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
 
-        // Auth check
-        const token = localStorage.getItem('auth_token');
-        const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+if (!token) {
+    window.location.href = '/login.html';
+}
 
-        if (!token) {
-            window.location.href = '/login.html';
-        }
+if (userData.is_super_admin) {
+    window.location.href = '/admin.html';
+}
 
-        if (userData.is_super_admin) {
-            window.location.href = '/admin.html';
-        }
+document.getElementById('userName').textContent = userData.ad_soyad || userData.kullanici_adi;
 
-        document.getElementById('userName').textContent = userData.ad_soyad || userData.kullanici_adi;
+function doLogout() {
+    localStorage.clear();
+    window.location.href = '/login.html';
+}
 
-        // API helper
-        async function apiRequest(endpoint, options = {}) {
-            try {
-                const response = await fetch(`${API_URL}${endpoint}`, {
-                    ...options,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                        ...options.headers
-                    }
-                });
-
-                if (response.status === 401 || response.status === 403) {
-                    alert('Oturum süreniz doldu');
-                    doLogout();
-                    return;
-                }
-
-                return response.json();
-            } catch (error) {
-                console.error('API Error:', error);
-                alert('Bağlantı hatası: ' + error.message);
-                return { success: false, message: error.message };
+// API helper
+async function apiRequest(endpoint, options = {}) {
+    try {
+        const response = await fetch(`${API_URL}${endpoint}`, {
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                ...options.headers
             }
-        }
-
-        // Uzmanları yükle
-        async function loadUzmanlar() {
-            const data = await apiRequest('/appointments/uzmanlar');
-            if (data && data.success) {
-                uzmanlar = data.data;
-                const select = document.getElementById('uzman');
-                select.innerHTML = '<option value="">Seçiniz...</option>';
-                uzmanlar.forEach(u => {
-                    select.innerHTML += `<option value="${u.oda_adi}">${u.oda_adi}</option>`;
-                });
-            } else {
-                console.error('Uzmanlar yüklenemedi:', data);
-            }
-        }
-
-        // Calendar başlat
-        document.addEventListener('DOMContentLoaded', async function() {
-            await loadUzmanlar();
-
-            const calendarEl = document.getElementById('calendar');
-            calendar = new FullCalendar.Calendar(calendarEl, {
-                locale: 'tr',
-                initialView: 'timeGridWeek',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
-                },
-                buttonText: {
-                    today: 'Bugün',
-                    month: 'Ay',
-                    week: 'Hafta',
-                    day: 'Gün'
-                },
-                slotMinTime: '08:00:00',
-                slotMaxTime: '20:00:00',
-                slotDuration: '00:30:00',
-                allDaySlot: false,
-                height: 'auto',
-                editable: true,
-                selectable: true,
-                selectMirror: true,
-                dayMaxEvents: true,
-                weekends: true,
-                
-                // Takvim tıklama - yeni randevu
-                select: function(info) {
-                    openModal(null, info.start, info.end);
-                },
-
-                // Randevu tıklama - düzenle
-                eventClick: function(info) {
-                    openModal(info.event);
-                },
-
-                // Randevu sürükle
-                eventDrop: async function(info) {
-                    const event = info.event;
-                    const success = await updateAppointmentFromEvent(event);
-                    if (!success) {
-                        info.revert();
-                    }
-                },
-
-                // Randevu resize
-                eventResize: async function(info) {
-                    const event = info.event;
-                    const success = await updateAppointmentFromEvent(event);
-                    if (!success) {
-                        info.revert();
-                    }
-                },
-
-                events: async function(info, successCallback, failureCallback) {
-                    const data = await apiRequest(`/appointments?start=${info.startStr}&end=${info.endStr}`);
-                    if (data && data.success) {
-                        const events = data.data.map(apt => ({
-                            id: apt.id,
-                            title: `${apt.musteri_adi} - ${apt.uzman}`,
-                            start: apt.baslangic_saati,
-                            end: apt.bitis_saati,
-                            color: getColorForUzman(apt.uzman),
-                            extendedProps: apt
-                        }));
-                        successCallback(events);
-                    } else {
-                        failureCallback();
-                    }
-                }
-            });
-
-            calendar.render();
         });
 
-        // Uzman renkleri
-        function getColorForUzman(uzman) {
-            const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
-            const index = uzmanlar.findIndex(u => u.oda_adi === uzman);
-            return colors[index % colors.length] || '#667eea';
+        if (response.status === 401 || response.status === 403) {
+            alert('Oturum süreniz doldu');
+            doLogout();
+            return;
         }
 
-        // Modal aç
-        function openModal(event = null, start = null, end = null) {
-            currentModal = new bootstrap.Modal(document.getElementById('appointmentModal'));
-            const form = document.getElementById('appointmentForm');
+        return response.json();
+    } catch (error) {
+        console.error('API Error:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+// Tarih formatları
+function formatDate(date) {
+    const days = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+    const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+    
+    return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+function formatDateTimeLocal(date) {
+    const d = new Date(date);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+}
+
+// Tarih değiştir
+function changeDate(delta) {
+    if (delta === 0) {
+        currentDate = new Date();
+    } else {
+        currentDate.setDate(currentDate.getDate() + delta);
+    }
+    updateCalendar();
+}
+
+// Mini calendar
+let miniCalendarDate = new Date();
+
+function changeMiniMonth(delta) {
+    miniCalendarDate.setMonth(miniCalendarDate.getMonth() + delta);
+    renderMiniCalendar();
+}
+
+function renderMiniCalendar() {
+    const year = miniCalendarDate.getFullYear();
+    const month = miniCalendarDate.getMonth();
+    
+    const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+    document.getElementById('miniCalendarTitle').textContent = `${months[month]} ${year}`;
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDay = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+    
+    const grid = document.getElementById('miniCalendarGrid');
+    grid.innerHTML = '';
+    
+    const dayHeaders = ['P', 'Pt', 'S', 'Ç', 'P', 'C', 'Ct'];
+    dayHeaders.forEach(day => {
+        const header = document.createElement('div');
+        header.className = 'mini-calendar-day-header';
+        header.textContent = day;
+        grid.appendChild(header);
+    });
+    
+    for (let i = 0; i < startDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'mini-calendar-day other-month';
+        grid.appendChild(empty);
+    }
+    
+    const today = new Date();
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayEl = document.createElement('div');
+        dayEl.className = 'mini-calendar-day';
+        dayEl.textContent = day;
+        
+        const date = new Date(year, month, day);
+        if (date.toDateString() === today.toDateString()) {
+            dayEl.classList.add('today');
+        }
+        
+        dayEl.onclick = () => {
+            currentDate = new Date(year, month, day);
+            updateCalendar();
+        };
+        
+        grid.appendChild(dayEl);
+    }
+}
+
+async function loadUzmanlar() {
+    const data = await apiRequest('/appointments/uzmanlar');
+    if (data && data.success) {
+        uzmanlar = data.data;
+        
+        const select = document.getElementById('uzman');
+        select.innerHTML = '<option value="">Seçiniz...</option>';
+        uzmanlar.forEach(u => {
+            select.innerHTML += `<option value="${u.oda_adi}">${u.oda_adi}</option>`;
+        });
+        
+        document.getElementById('statUzman').textContent = uzmanlar.length;
+    }
+}
+
+async function loadAppointments() {
+    const start = new Date(currentDate);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(currentDate);
+    end.setHours(23, 59, 59, 999);
+    
+    const data = await apiRequest(`/appointments?start=${start.toISOString()}&end=${end.toISOString()}`);
+    
+    if (data && data.success) {
+        appointments = data.data;
+        document.getElementById('statTotal').textContent = appointments.length;
+    } else {
+        appointments = [];
+        document.getElementById('statTotal').textContent = 0;
+    }
+}
+
+function renderTimeline() {
+    const container = document.getElementById('timelineContainer');
+    
+    const hours = [];
+    for (let h = 8; h <= 20; h++) {
+        hours.push(`${h.toString().padStart(2, '0')}:00`);
+    }
+    
+    let html = '<div class="timeline-grid">';
+    html += '<div class="time-labels">';
+    hours.forEach(hour => {
+        html += `<div class="time-label">${hour}</div>`;
+    });
+    html += '</div>';
+    
+    html += '<div class="appointments-container" style="grid-template-columns: repeat(' + (uzmanlar.length || 1) + ', 1fr);">';
+    
+    if (uzmanlar.length === 0) {
+        html += '<div class="uzman-column"><div class="text-center text-muted mt-5">Uzman bulunamadı</div></div>';
+    } else {
+        uzmanlar.forEach((uzman) => {
+            html += `
+                <div class="uzman-column">
+                    <div class="uzman-header">${uzman.oda_adi}</div>
+                    <div class="time-grid" data-uzman="${uzman.oda_adi}">
+                        ${hours.map((_, i) => `<div class="time-slot" style="top: ${i * 80}px;" data-hour="${8 + i}"></div>`).join('')}
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    html += '</div></div>';
+    container.innerHTML = html;
+    
+    renderAppointments();
+    
+    document.querySelectorAll('.time-slot').forEach(slot => {
+        slot.onclick = (e) => {
+            const uzman = e.target.closest('.time-grid').dataset.uzman;
+            const hour = parseInt(e.target.dataset.hour);
             
-            form.reset();
-            currentAppointmentId = null;
-            document.getElementById('deleteBtn').style.display = 'none';
+            const start = new Date(currentDate);
+            start.setHours(hour, 0, 0, 0);
+            
+            const end = new Date(start);
+            end.setHours(hour + 1, 0, 0, 0);
+            
+            openAddModal(uzman, start, end);
+        };
+    });
+}
 
-            if (event) {
-                // Düzenleme modu
-                document.getElementById('modalTitle').textContent = 'Randevu Düzenle';
-                document.getElementById('deleteBtn').style.display = 'block';
-                currentAppointmentId = event.id;
-                
-                const props = event.extendedProps;
-                document.getElementById('appointmentId').value = event.id;
-                document.getElementById('musteriAdi').value = props.musteri_adi;
-                document.getElementById('telefonNo').value = props.telefon_no || '';
-                document.getElementById('islemTuru').value = props.islem_turu || '';
-                document.getElementById('uzman').value = props.uzman;
-                document.getElementById('baslangicSaati').value = formatDateTimeLocal(event.start);
-                document.getElementById('bitisSaati').value = formatDateTimeLocal(event.end);
-                document.getElementById('notlar').value = props.notlar || '';
-            } else {
-                // Yeni randevu
-                document.getElementById('modalTitle').textContent = 'Yeni Randevu';
-                if (start && end) {
-                    document.getElementById('baslangicSaati').value = formatDateTimeLocal(start);
-                    document.getElementById('bitisSaati').value = formatDateTimeLocal(end);
-                }
-            }
-
-            currentModal.show();
-        }
-
-        // DateTime format
-        function formatDateTimeLocal(date) {
-            const d = new Date(date);
-            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-            return d.toISOString().slice(0, 16);
-        }
-
-        // Form submit
-        document.getElementById('appointmentForm').addEventListener('submit', async (e) => {
+function renderAppointments() {
+    appointments.forEach((apt, index) => {
+        const grid = document.querySelector(`.time-grid[data-uzman="${apt.uzman}"]`);
+        if (!grid) return;
+        
+        const start = new Date(apt.baslangic_saati);
+        const end = new Date(apt.bitis_saati);
+        
+        const startMinutes = start.getHours() * 60 + start.getMinutes();
+        const endMinutes = end.getHours() * 60 + end.getMinutes();
+        const duration = endMinutes - startMinutes;
+        
+        const top = ((startMinutes - 480) / 60) * 80;
+        const height = (duration / 60) * 80;
+        
+        const colorClass = `color-${(index % 5) + 1}`;
+        
+        const card = document.createElement('div');
+        card.className = `appointment-card ${colorClass}`;
+        card.style.top = `${top}px`;
+        card.style.height = `${height}px`;
+        card.draggable = true;
+        card.dataset.id = apt.id;
+        
+        card.innerHTML = `
+            <div class="appointment-title">${apt.musteri_adi}</div>
+            <div class="appointment-details">
+                <i class="bi bi-telephone"></i>
+                ${apt.telefon_no || '-'}
+            </div>
+            <div class="appointment-time">
+                ${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} - 
+                ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}
+            </div>
+        `;
+        
+        card.onclick = (e) => {
+            e.stopPropagation();
+            openEditModal(apt);
+        };
+        
+        card.ondragstart = (e) => {
+            draggedElement = { apt, card };
+            e.dataTransfer.effectAllowed = 'move';
+        };
+        
+        grid.appendChild(card);
+    });
+    
+    document.querySelectorAll('.time-grid').forEach(grid => {
+        grid.ondragover = (e) => {
             e.preventDefault();
-
-            const formData = {
-                musteri_adi: document.getElementById('musteriAdi').value,
-                telefon_no: document.getElementById('telefonNo').value,
-                islem_turu: document.getElementById('islemTuru').value,
-                uzman: document.getElementById('uzman').value,
-                baslangic_saati: new Date(document.getElementById('baslangicSaati').value).toISOString(),
-                bitis_saati: new Date(document.getElementById('bitisSaati').value).toISOString(),
-                notlar: document.getElementById('notlar').value
-            };
-
-            let result;
-            if (currentAppointmentId) {
-                result = await apiRequest(`/appointments/${currentAppointmentId}`, {
-                    method: 'PUT',
-                    body: JSON.stringify(formData)
-                });
-            } else {
-                result = await apiRequest('/appointments', {
-                    method: 'POST',
-                    body: JSON.stringify(formData)
-                });
-            }
-
-            if (result && result.success) {
-                currentModal.hide();
-                calendar.refetchEvents();
-                alert(result.message || 'Kaydedildi');
-            } else {
-                alert('Hata: ' + (result?.message || 'Bilinmeyen hata'));
-            }
-        });
-
-        // Update from event
-        async function updateAppointmentFromEvent(event) {
-            const props = event.extendedProps;
-            const result = await apiRequest(`/appointments/${event.id}`, {
+            e.dataTransfer.dropEffect = 'move';
+        };
+        
+        grid.ondrop = async (e) => {
+            e.preventDefault();
+            if (!draggedElement) return;
+            
+            const rect = grid.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            const hour = Math.floor((y / 80)) + 8;
+            const minutes = Math.round(((y % 80) / 80) * 60);
+            
+            const newStart = new Date(currentDate);
+            newStart.setHours(hour, minutes, 0, 0);
+            
+            const duration = new Date(draggedElement.apt.bitis_saati) - new Date(draggedElement.apt.baslangic_saati);
+            const newEnd = new Date(newStart.getTime() + duration);
+            
+            const newUzman = grid.dataset.uzman;
+            
+            const result = await apiRequest(`/appointments/${draggedElement.apt.id}`, {
                 method: 'PUT',
                 body: JSON.stringify({
-                    musteri_adi: props.musteri_adi,
-                    telefon_no: props.telefon_no,
-                    islem_turu: props.islem_turu,
-                    uzman: props.uzman,
-                    baslangic_saati: event.start.toISOString(),
-                    bitis_saati: event.end.toISOString(),
-                    notlar: props.notlar
+                    ...draggedElement.apt,
+                    uzman: newUzman,
+                    baslangic_saati: newStart.toISOString(),
+                    bitis_saati: newEnd.toISOString()
                 })
             });
-            return result && result.success;
-        }
-
-        // Delete
-        async function deleteAppointment() {
-            if (!currentAppointmentId) return;
             
-            if (confirm('Bu randevuyu silmek istediğinizden emin misiniz?')) {
-                const result = await apiRequest(`/appointments/${currentAppointmentId}`, {
-                    method: 'DELETE'
-                });
-
-                if (result && result.success) {
-                    currentModal.hide();
-                    calendar.refetchEvents();
-                    alert('Randevu silindi');
-                } else {
-                    alert('Hata: ' + (result?.message || 'Silinemedi'));
-                }
+            if (result && result.success) {
+                updateCalendar();
             }
+            
+            draggedElement = null;
+        };
+    });
+}
+
+function openAddModal(uzman = '', start = null, end = null) {
+    currentModal = new bootstrap.Modal(document.getElementById('appointmentModal'));
+    const form = document.getElementById('appointmentForm');
+    
+    form.reset();
+    currentAppointmentId = null;
+    document.getElementById('deleteBtn').style.display = 'none';
+    document.getElementById('modalTitle').textContent = 'Yeni Randevu';
+    
+    if (uzman) document.getElementById('uzman').value = uzman;
+    if (start) document.getElementById('baslangicSaati').value = formatDateTimeLocal(start);
+    if (end) document.getElementById('bitisSaati').value = formatDateTimeLocal(end);
+    
+    currentModal.show();
+}
+
+function openEditModal(apt) {
+    currentModal = new bootstrap.Modal(document.getElementById('appointmentModal'));
+    currentAppointmentId = apt.id;
+    
+    document.getElementById('modalTitle').textContent = 'Randevu Düzenle';
+    document.getElementById('deleteBtn').style.display = 'block';
+    
+    document.getElementById('musteriAdi').value = apt.musteri_adi;
+    document.getElementById('telefonNo').value = apt.telefon_no || '';
+    document.getElementById('islemTuru').value = apt.islem_turu || '';
+    document.getElementById('uzman').value = apt.uzman;
+    document.getElementById('baslangicSaati').value = formatDateTimeLocal(apt.baslangic_saati);
+    document.getElementById('bitisSaati').value = formatDateTimeLocal(apt.bitis_saati);
+    document.getElementById('notlar').value = apt.notlar || '';
+    
+    currentModal.show();
+}
+
+document.getElementById('appointmentForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = {
+        musteri_adi: document.getElementById('musteriAdi').value,
+        telefon_no: document.getElementById('telefonNo').value,
+        islem_turu: document.getElementById('islemTuru').value,
+        uzman: document.getElementById('uzman').value,
+        baslangic_saati: new Date(document.getElementById('baslangicSaati').value).toISOString(),
+        bitis_saati: new Date(document.getElementById('bitisSaati').value).toISOString(),
+        notlar: document.getElementById('notlar').value
+    };
+    
+    let result;
+    if (currentAppointmentId) {
+        result = await apiRequest(`/appointments/${currentAppointmentId}`, {
+            method: 'PUT',
+            body: JSON.stringify(formData)
+        });
+    } else {
+        result = await apiRequest('/appointments', {
+            method: 'POST',
+            body: JSON.stringify(formData)
+        });
+    }
+    
+    if (result && result.success) {
+        currentModal.hide();
+        updateCalendar();
+        alert('✅ Randevu kaydedildi');
+    } else {
+        alert('❌ Hata: ' + (result?.message || 'Kaydedilemedi'));
+    }
+});
+
+async function deleteAppointment() {
+    if (!currentAppointmentId) return;
+    
+    if (confirm('Bu randevuyu silmek istediğinizden emin misiniz?')) {
+        const result = await apiRequest(`/appointments/${currentAppointmentId}`, {
+            method: 'DELETE'
+        });
+        
+        if (result && result.success) {
+            currentModal.hide();
+            updateCalendar();
+            alert('✅ Randevu silindi');
+        } else {
+            alert('❌ Hata: ' + (result?.message || 'Silinemedi'));
         }
+    }
+}
+
+async function updateCalendar() {
+    document.getElementById('currentDate').textContent = formatDate(currentDate);
+    await loadAppointments();
+    renderTimeline();
+}
+
+(async function init() {
+    await loadUzmanlar();
+    renderMiniCalendar();
+    await updateCalendar();
+})();
     </script>
 </body>
 </html>
