@@ -86,6 +86,58 @@ router.post('/isletme', async (req, res) => {
   }
 });
 
+// İşletme güncelle
+router.put('/isletme/:id', async (req, res) => {
+  const client = await masterPool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { id } = req.params;
+    const { isletme_id, kullanici_adi, ad_soyad, sifre, bagli_tablo_adi, uzmanlar } = req.body;
+
+    // 1. İşletme bilgilerini güncelle
+    let updateQuery = `
+      UPDATE admin_users 
+      SET isletme_id = $1, kullanici_adi = $2, ad_soyad = $3, bagli_tablo_adi = $4
+    `;
+    let params = [isletme_id, kullanici_adi, ad_soyad, bagli_tablo_adi];
+
+    // Eğer şifre varsa hash'le ve ekle
+    if (sifre) {
+      const hashedPassword = await bcrypt.hash(sifre, 10);
+      updateQuery += `, sifre = $5 WHERE id = $6`;
+      params.push(hashedPassword, id);
+    } else {
+      updateQuery += ` WHERE id = $5`;
+      params.push(id);
+    }
+
+    await client.query(updateQuery, params);
+
+    // 2. Mevcut uzmanları sil
+    await client.query(`DELETE FROM calisma_odalari WHERE isletme_id = $1`, [isletme_id]);
+
+    // 3. Yeni uzmanları ekle
+    if (uzmanlar && uzmanlar.length > 0) {
+      for (const oda of uzmanlar) {
+        await client.query(`
+          INSERT INTO calisma_odalari (isletme_id, oda_adi)
+          VALUES ($1, $2)
+        `, [isletme_id, oda]);
+      }
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true, message: 'İşletme güncellendi' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 // İşletme sil
 router.delete('/isletme/:id', async (req, res) => {
   const client = await masterPool.connect();
