@@ -424,23 +424,9 @@
                                 <small class="text-muted">Sadece küçük harf, rakam ve alt çizgi (_)</small>
                             </div>
                             <div class="col-12">
-                                <label class="form-label">Uzmanlar / Odalar *</label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="uzmanInput" 
-                                           placeholder="Uzman adı girin (örn: Ahmet Usta)" 
-                                           onkeypress="if(event.key==='Enter'){event.preventDefault();addUzman();}">
-                                    <button type="button" class="btn btn-outline-primary" onclick="addUzman()">
-                                        <i class="bi bi-plus-lg"></i> Ekle
-                                    </button>
-                                </div>
-                                <div id="uzmanlarList" class="badge-list"></div>
-                                <small class="text-muted">En az 1 uzman ekleyin. Enter tuşu ile hızlı ekleme yapabilirsiniz.</small>
-                            </div>
-                            <div class="col-12">
                                 <div class="alert alert-info">
                                     <i class="bi bi-info-circle"></i> 
-                                    <strong>Bilgi:</strong> Database ayarları otomatik yapılandırılır. 
-                                    Sadece işletme bilgileri ve uzmanları girmeniz yeterlidir.
+                                    <strong>Bilgi:</strong> İşletme sahibi kendi panelinden uzmanlarını ekleyecektir.
                                 </div>
                             </div>
                             <div class="col-12">
@@ -458,7 +444,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const API_URL = '/api';
-        let uzmanlarArray = [];
         let currentModal = null;
 
         // Auth check
@@ -575,10 +560,8 @@
 
         // Modal aç
         function openAddModal() {
-            uzmanlarArray = [];
             document.getElementById('addForm').reset();
             document.getElementById('editId').value = '';
-            document.getElementById('uzmanlarList').innerHTML = '';
             document.getElementById('addModalTitle').innerHTML = '<i class="bi bi-building-add"></i> Yeni İşletme Ekle';
             document.getElementById('submitBtn').innerHTML = '<i class="bi bi-check-lg"></i> İşletme Oluştur';
             document.getElementById('sifre').required = true;
@@ -596,11 +579,6 @@
             const business = data.data.find(b => b.id === id);
             if (!business) return;
             
-            // Uzmanları yükle
-            const uzmanData = await apiRequest(`/appointments/uzmanlar?isletme=${business.isletme_id}`);
-            uzmanlarArray = uzmanData && uzmanData.success ? uzmanData.data.map(u => u.oda_adi) : [];
-            
-            // Formu doldur
             document.getElementById('editId').value = id;
             document.getElementById('isletmeId').value = business.isletme_id;
             document.getElementById('kullaniciAdi').value = business.kullanici_adi;
@@ -608,8 +586,6 @@
             document.getElementById('tabloAdi').value = business.bagli_tablo_adi;
             document.getElementById('sifre').value = '';
             document.getElementById('sifre').required = false;
-            
-            updateUzmanlarList();
             
             document.getElementById('addModalTitle').innerHTML = '<i class="bi bi-pencil"></i> İşletme Düzenle';
             document.getElementById('submitBtn').innerHTML = '<i class="bi bi-check-lg"></i> Değişiklikleri Kaydet';
@@ -620,58 +596,9 @@
             currentModal.show();
         }
 
-        // Uzman ekle
-        function addUzman() {
-            const input = document.getElementById('uzmanInput');
-            const uzman = input.value.trim();
-            
-            if (!uzman) {
-                alert('⚠️ Uzman adı boş olamaz');
-                return;
-            }
-            
-            if (uzmanlarArray.includes(uzman)) {
-                alert('⚠️ Bu uzman zaten listede');
-                return;
-            }
-            
-            uzmanlarArray.push(uzman);
-            updateUzmanlarList();
-            input.value = '';
-            input.focus();
-        }
-
-        // Uzman listesini güncelle
-        function updateUzmanlarList() {
-            const list = document.getElementById('uzmanlarList');
-            
-            if (uzmanlarArray.length === 0) {
-                list.innerHTML = '<div class="text-muted text-center py-3">Henüz uzman eklenmedi</div>';
-            } else {
-                list.innerHTML = uzmanlarArray.map((u, i) => `
-                    <div class="badge-item">
-                        ${u}
-                        <i class="bi bi-x-circle" onclick="removeUzman(${i})"></i>
-                    </div>
-                `).join('');
-            }
-        }
-
-        // Uzman çıkar
-        function removeUzman(index) {
-            uzmanlarArray.splice(index, 1);
-            updateUzmanlarList();
-        }
-
         // Form submit
         document.getElementById('addForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            if (uzmanlarArray.length === 0) {
-                alert('⚠️ En az 1 uzman eklemelisiniz!');
-                document.getElementById('uzmanInput').focus();
-                return;
-            }
 
             const editId = document.getElementById('editId').value;
             const sifre = document.getElementById('sifre').value;
@@ -680,11 +607,9 @@
                 isletme_id: document.getElementById('isletmeId').value.trim(),
                 kullanici_adi: document.getElementById('kullaniciAdi').value.trim(),
                 ad_soyad: document.getElementById('adSoyad').value.trim(),
-                bagli_tablo_adi: document.getElementById('tabloAdi').value.trim(),
-                uzmanlar: uzmanlarArray
+                bagli_tablo_adi: document.getElementById('tabloAdi').value.trim()
             };
 
-            // Şifre sadece doluysa ekle
             if (sifre) {
                 if (sifre.length < 6) {
                     alert('⚠️ Şifre en az 6 karakter olmalıdır');
@@ -692,7 +617,6 @@
                 }
                 formData.sifre = sifre;
             } else if (!editId) {
-                // Yeni işletme için şifre zorunlu
                 alert('⚠️ Şifre gereklidir');
                 return;
             }
@@ -709,13 +633,11 @@
 
             let result;
             if (editId) {
-                // Güncelleme
                 result = await apiRequest(`/admin/isletme/${editId}`, {
                     method: 'PUT',
                     body: JSON.stringify(formData)
                 });
             } else {
-                // Yeni ekleme
                 result = await apiRequest('/admin/isletme', {
                     method: 'POST',
                     body: JSON.stringify(formData)
@@ -739,7 +661,7 @@
                         Kullanıcı Adı: ${formData.kullanici_adi}
                         Şifre: ${formData.sifre}
                         
-                        Bu bilgileri işletme sahibine iletin.
+                        İşletme sahibi kendi panelinden uzmanlarını ekleyecektir.
                     `;
                     alert(successMsg);
                 }
@@ -770,7 +692,6 @@
 
         // Sayfa yüklendiğinde
         loadBusinesses();
-        updateUzmanlarList();
     </script>
 </body>
 </html>
