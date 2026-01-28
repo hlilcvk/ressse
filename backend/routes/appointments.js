@@ -117,7 +117,7 @@ router.get('/uzmanlar', async (req, res) => {
     const { isletme_id } = req.user;
     
     const result = await masterPool.query(
-      'SELECT id, oda_adi FROM calisma_odalari WHERE isletme_id = $1 AND aktif = true ORDER BY oda_adi',
+      'SELECT id, oda_adi, is_active FROM calisma_odalari WHERE isletme_id = $1 ORDER BY oda_adi',
       [isletme_id]
     );
     
@@ -125,6 +125,94 @@ router.get('/uzmanlar', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Uzman ekle
+router.post('/uzman', async (req, res) => {
+  try {
+    const { isletme_id } = req.user;
+    const { oda_adi } = req.body;
+
+    if (!oda_adi || !oda_adi.trim()) {
+      return res.status(400).json({ success: false, message: 'Uzman adı gereklidir' });
+    }
+
+    await masterPool.query(
+      'INSERT INTO calisma_odalari (isletme_id, oda_adi, is_active) VALUES ($1, $2, true)',
+      [isletme_id, oda_adi.trim()]
+    );
+
+    res.json({ success: true, message: 'Uzman eklendi' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Uzman güncelle (aktif/pasif)
+router.put('/uzman/:id', async (req, res) => {
+  try {
+    const { isletme_id } = req.user;
+    const { id } = req.params;
+    const { is_active } = req.body;
+
+    await masterPool.query(
+      'UPDATE calisma_odalari SET is_active = $1 WHERE id = $2 AND isletme_id = $3',
+      [is_active, id, isletme_id]
+    );
+
+    res.json({ success: true, message: 'Uzman güncellendi' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Uzman sil
+router.delete('/uzman/:id', async (req, res) => {
+  const client = await masterPool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { isletme_id, bagli_tablo_adi } = req.user;
+    const { id } = req.params;
+
+    // Uzman adını al
+    const uzmanResult = await client.query(
+      'SELECT oda_adi FROM calisma_odalari WHERE id = $1 AND isletme_id = $2',
+      [id, isletme_id]
+    );
+
+    if (uzmanResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Uzman bulunamadı' });
+    }
+
+    const uzmanAdi = uzmanResult.rows[0].oda_adi;
+
+    // Bu uzmana ait randevuları sil
+    if (bagli_tablo_adi) {
+      await client.query(
+        `DELETE FROM ${bagli_tablo_adi} WHERE uzman = $1`,
+        [uzmanAdi]
+      );
+    }
+
+    // Uzmanı sil
+    await client.query(
+      'DELETE FROM calisma_odalari WHERE id = $1 AND isletme_id = $2',
+      [id, isletme_id]
+    );
+
+    await client.query('COMMIT');
+    res.json({ success: true, message: 'Uzman silindi' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  } finally {
+    client.release();
   }
 });
 
