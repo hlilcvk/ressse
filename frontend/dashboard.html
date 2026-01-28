@@ -623,6 +623,542 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/dashboard-v2.js"></script>
+    <script>
+const API_URL = '/api';
+let currentDate = new Date();
+let uzmanlar = [];
+let appointments = [];
+let currentModal = null;
+let currentAppointmentId = null;
+let draggedElement = null;
+let dragTooltip = null;
+let currentTimeLine = null;
+
+// Auth check
+const token = localStorage.getItem('auth_token');
+const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+
+if (!token) {
+    window.location.href = '/login.html';
+}
+
+if (userData.is_super_admin) {
+    window.location.href = '/admin.html';
+}
+
+document.getElementById('userName').textContent = userData.ad_soyad || userData.kullanici_adi;
+
+function doLogout() {
+    localStorage.clear();
+    window.location.href = '/login.html';
+}
+
+// API helper
+async function apiRequest(endpoint, options = {}) {
+    try {
+        const response = await fetch(`${API_URL}${endpoint}`, {
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                ...options.headers
+            }
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            alert('Oturum süreniz doldu');
+            doLogout();
+            return;
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('API Error:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+// Tarih formatları
+function formatDate(date) {
+    const days = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+    const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+    
+    return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+function formatDateTimeLocal(date) {
+    const d = new Date(date);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+}
+
+function formatTime(hours, minutes) {
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
+// Tarih değiştir
+function changeDate(delta) {
+    if (delta === 0) {
+        currentDate = new Date();
+    } else {
+        currentDate.setDate(currentDate.getDate() + delta);
+    }
+    updateCalendar();
+}
+
+// Mini calendar
+let miniCalendarDate = new Date();
+
+function changeMiniMonth(delta) {
+    miniCalendarDate.setMonth(miniCalendarDate.getMonth() + delta);
+    renderMiniCalendar();
+}
+
+function renderMiniCalendar() {
+    const year = miniCalendarDate.getFullYear();
+    const month = miniCalendarDate.getMonth();
+    
+    const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+    document.getElementById('miniCalendarTitle').textContent = `${months[month]} ${year}`;
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDay = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+    
+    const grid = document.getElementById('miniCalendarGrid');
+    grid.innerHTML = '';
+    
+    const dayHeaders = ['P', 'Pt', 'S', 'Ç', 'P', 'C', 'Ct'];
+    dayHeaders.forEach(day => {
+        const header = document.createElement('div');
+        header.className = 'mini-calendar-day-header';
+        header.textContent = day;
+        grid.appendChild(header);
+    });
+    
+    for (let i = 0; i < startDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'mini-calendar-day other-month';
+        grid.appendChild(empty);
+    }
+    
+    const today = new Date();
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayEl = document.createElement('div');
+        dayEl.className = 'mini-calendar-day';
+        dayEl.textContent = day;
+        
+        const date = new Date(year, month, day);
+        if (date.toDateString() === today.toDateString()) {
+            dayEl.classList.add('today');
+        }
+        
+        dayEl.onclick = () => {
+            currentDate = new Date(year, month, day);
+            updateCalendar();
+        };
+        
+        grid.appendChild(dayEl);
+    }
+}
+
+// Uzmanları yükle (sadece aktif olanlar)
+async function loadUzmanlar() {
+    const data = await apiRequest('/appointments/uzmanlar');
+    if (data && data.success) {
+        // Sadece aktif uzmanları filtrele
+        uzmanlar = data.data.filter(u => u.is_active !== false);
+        
+        const select = document.getElementById('uzman');
+        select.innerHTML = '<option value="">Seçiniz...</option>';
+        uzmanlar.forEach(u => {
+            select.innerHTML += `<option value="${u.oda_adi}">${u.oda_adi}</option>`;
+        });
+        
+        document.getElementById('statUzman').textContent = uzmanlar.length;
+    }
+}
+
+// Randevuları yükle
+async function loadAppointments() {
+    const start = new Date(currentDate);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(currentDate);
+    end.setHours(23, 59, 59, 999);
+    
+    const data = await apiRequest(`/appointments?start=${start.toISOString()}&end=${end.toISOString()}`);
+    
+    if (data && data.success) {
+        appointments = data.data;
+        document.getElementById('statTotal').textContent = appointments.length;
+    } else {
+        appointments = [];
+        document.getElementById('statTotal').textContent = 0;
+    }
+}
+
+// Şimdiki zaman çizgisini güncelle
+function updateCurrentTimeLine() {
+    if (currentTimeLine) {
+        currentTimeLine.remove();
+    }
+    
+    const now = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const currentDay = new Date(currentDate);
+    currentDay.setHours(0, 0, 0, 0);
+    
+    // Sadece bugünse çizgiyi göster
+    if (today.getTime() !== currentDay.getTime()) {
+        return;
+    }
+    
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    
+    // 08:00 - 20:00 arası
+    if (hours < 8 || hours >= 20) {
+        return;
+    }
+    
+    const totalMinutes = hours * 60 + minutes;
+    const startMinutes = 8 * 60; // 08:00
+    const top = ((totalMinutes - startMinutes) / 60) * 80;
+    
+    document.querySelectorAll('.time-grid').forEach(grid => {
+        const line = document.createElement('div');
+        line.className = 'current-time-line';
+        line.style.top = `${top}px`;
+        grid.appendChild(line);
+        currentTimeLine = line;
+    });
+}
+
+// Timeline render
+function renderTimeline() {
+    const container = document.getElementById('timelineGrid');
+    
+    const hours = [];
+    for (let h = 8; h <= 20; h++) {
+        hours.push(h);
+    }
+    
+    let html = '<div class="timeline-grid">';
+    
+    // Sol: Saat etiketleri
+    html += '<div class="time-labels">';
+    hours.forEach(hour => {
+        html += `<div class="time-label">${formatTime(hour, 0)}</div>`;
+    });
+    html += '</div>';
+    
+    // Sağ: Uzman kolonları
+    html += '<div class="appointments-container" style="grid-template-columns: repeat(' + (uzmanlar.length || 1) + ', 1fr);">';
+    
+    if (uzmanlar.length === 0) {
+        html += '<div style="grid-column: 1; padding: 3rem; text-align: center; color: #adb5bd;">';
+        html += '<i class="bi bi-info-circle" style="font-size: 3rem; display: block; margin-bottom: 1rem;"></i>';
+        html += '<h5>Aktif Uzman Bulunamadı</h5>';
+        html += '<p>Uzmanlarınızı aktif hale getirmek için "Uzmanlarım" sayfasına gidin.</p>';
+        html += '</div>';
+    } else {
+        // Sticky headers
+        html += '<div class="uzman-headers" style="grid-template-columns: repeat(' + uzmanlar.length + ', 1fr);">';
+        uzmanlar.forEach(uzman => {
+            html += `<div class="uzman-header">${uzman.oda_adi}</div>`;
+        });
+        html += '</div>';
+        
+        // Grid columns
+        uzmanlar.forEach(uzman => {
+            html += `
+                <div class="uzman-column">
+                    <div class="time-grid" data-uzman="${uzman.oda_adi}">
+            `;
+            
+            // Saat ve yarım saat çizgileri
+            for (let i = 0; i < hours.length; i++) {
+                html += `<div class="time-slot" style="top: ${i * 80}px;" data-hour="${hours[i]}" data-minute="0"></div>`;
+                html += `<div class="time-slot half-hour" style="top: ${i * 80 + 40}px;" data-hour="${hours[i]}" data-minute="30"></div>`;
+            }
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    html += '</div></div>';
+    container.innerHTML = html;
+    
+    // Randevuları ekle
+    renderAppointments();
+    
+    // Şimdiki zaman çizgisi
+    updateCurrentTimeLine();
+    setInterval(updateCurrentTimeLine, 60000); // Her dakika güncelle
+    
+    // Tıklama eventi - yeni randevu
+    document.querySelectorAll('.time-slot').forEach(slot => {
+        slot.onclick = (e) => {
+            if (e.target.classList.contains('appointment-card')) return;
+            
+            const grid = e.target.closest('.time-grid');
+            if (!grid) return;
+            
+            const uzman = grid.dataset.uzman;
+            const hour = parseInt(e.target.dataset.hour);
+            const minute = parseInt(e.target.dataset.minute);
+            
+            const start = new Date(currentDate);
+            start.setHours(hour, minute, 0, 0);
+            
+            const end = new Date(start);
+            end.setHours(hour + 1, 0, 0, 0);
+            
+            openAddModal(uzman, start, end);
+        };
+    });
+}
+
+// Snap to 30 minute grid
+function snapToGrid(minutes) {
+    return Math.round(minutes / 30) * 30;
+}
+
+// Randevuları render et
+function renderAppointments() {
+    dragTooltip = document.getElementById('dragTooltip');
+    
+    appointments.forEach((apt, index) => {
+        const grid = document.querySelector(`.time-grid[data-uzman="${apt.uzman}"]`);
+        if (!grid) return;
+        
+        const start = new Date(apt.baslangic_saati);
+        const end = new Date(apt.bitis_saati);
+        
+        const startMinutes = start.getHours() * 60 + start.getMinutes();
+        const endMinutes = end.getHours() * 60 + end.getMinutes();
+        const duration = endMinutes - startMinutes;
+        
+        const top = ((startMinutes - 480) / 60) * 80; // 480 = 8:00 AM
+        const height = (duration / 60) * 80;
+        
+        const colorClass = `color-${(index % 5) + 1}`;
+        
+        const card = document.createElement('div');
+        card.className = `appointment-card ${colorClass}`;
+        card.style.top = `${top}px`;
+        card.style.height = `${height}px`;
+        card.draggable = true;
+        card.dataset.id = apt.id;
+        
+        const timeStr = `${formatTime(start.getHours(), start.getMinutes())}\n${formatTime(end.getHours(), end.getMinutes())}`;
+        
+        card.innerHTML = `
+            <div class="appointment-time-badge">${timeStr}</div>
+            <div class="appointment-content">
+                <div class="appointment-title">${apt.musteri_adi}</div>
+                <div class="appointment-details">
+                    <i class="bi bi-scissors"></i>
+                    ${apt.islem_turu || 'İşlem belirtilmemiş'}
+                </div>
+            </div>
+        `;
+        
+        // Tıklama - düzenle
+        card.onclick = (e) => {
+            e.stopPropagation();
+            openEditModal(apt);
+        };
+        
+        // Sürükle başla
+        card.ondragstart = (e) => {
+            draggedElement = { apt, card, startY: e.clientY };
+            card.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            dragTooltip.style.display = 'block';
+        };
+        
+        // Sürüklerken
+        document.addEventListener('drag', (e) => {
+            if (draggedElement && e.clientY > 0) {
+                const grid = document.querySelector(`.time-grid[data-uzman="${draggedElement.apt.uzman}"]`);
+                if (!grid) return;
+                
+                const rect = grid.getBoundingClientRect();
+                const y = e.clientY - rect.top;
+                const totalMinutes = Math.floor((y / 80) * 60) + 480; // 480 = 8:00
+                const snappedMinutes = snapToGrid(totalMinutes);
+                const hours = Math.floor(snappedMinutes / 60);
+                const minutes = snappedMinutes % 60;
+                
+                dragTooltip.textContent = formatTime(hours, minutes);
+                dragTooltip.style.left = (e.clientX + 20) + 'px';
+                dragTooltip.style.top = (e.clientY - 10) + 'px';
+            }
+        });
+        
+        card.ondragend = () => {
+            card.classList.remove('dragging');
+            dragTooltip.style.display = 'none';
+        };
+        
+        grid.appendChild(card);
+    });
+    
+    // Drop zones
+    document.querySelectorAll('.time-grid').forEach(grid => {
+        grid.ondragover = (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        };
+        
+        grid.ondrop = async (e) => {
+            e.preventDefault();
+            if (!draggedElement) return;
+            
+            const rect = grid.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            const totalMinutes = Math.floor((y / 80) * 60) + 480;
+            const snappedMinutes = snapToGrid(totalMinutes);
+            const hours = Math.floor(snappedMinutes / 60);
+            const minutes = snappedMinutes % 60;
+            
+            const newStart = new Date(currentDate);
+            newStart.setHours(hours, minutes, 0, 0);
+            
+            const duration = new Date(draggedElement.apt.bitis_saati) - new Date(draggedElement.apt.baslangic_saati);
+            const newEnd = new Date(newStart.getTime() + duration);
+            
+            const newUzman = grid.dataset.uzman;
+            
+            const result = await apiRequest(`/appointments/${draggedElement.apt.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    ...draggedElement.apt,
+                    uzman: newUzman,
+                    baslangic_saati: newStart.toISOString(),
+                    bitis_saati: newEnd.toISOString()
+                })
+            });
+            
+            if (result && result.success) {
+                updateCalendar();
+            }
+            
+            draggedElement = null;
+        };
+    });
+}
+
+// Modal aç
+function openAddModal(uzman = '', start = null, end = null) {
+    currentModal = new bootstrap.Modal(document.getElementById('appointmentModal'));
+    const form = document.getElementById('appointmentForm');
+    
+    form.reset();
+    currentAppointmentId = null;
+    document.getElementById('deleteBtn').style.display = 'none';
+    document.getElementById('modalTitle').textContent = 'Yeni Randevu';
+    
+    if (uzman) document.getElementById('uzman').value = uzman;
+    if (start) document.getElementById('baslangicSaati').value = formatDateTimeLocal(start);
+    if (end) document.getElementById('bitisSaati').value = formatDateTimeLocal(end);
+    
+    currentModal.show();
+}
+
+function openEditModal(apt) {
+    currentModal = new bootstrap.Modal(document.getElementById('appointmentModal'));
+    currentAppointmentId = apt.id;
+    
+    document.getElementById('modalTitle').textContent = 'Randevu Düzenle';
+    document.getElementById('deleteBtn').style.display = 'block';
+    
+    document.getElementById('musteriAdi').value = apt.musteri_adi;
+    document.getElementById('telefonNo').value = apt.telefon_no || '';
+    document.getElementById('islemTuru').value = apt.islem_turu || '';
+    document.getElementById('uzman').value = apt.uzman;
+    document.getElementById('baslangicSaati').value = formatDateTimeLocal(apt.baslangic_saati);
+    document.getElementById('bitisSaati').value = formatDateTimeLocal(apt.bitis_saati);
+    document.getElementById('notlar').value = apt.notlar || '';
+    
+    currentModal.show();
+}
+
+// Form submit
+document.getElementById('appointmentForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = {
+        musteri_adi: document.getElementById('musteriAdi').value,
+        telefon_no: document.getElementById('telefonNo').value,
+        islem_turu: document.getElementById('islemTuru').value,
+        uzman: document.getElementById('uzman').value,
+        baslangic_saati: new Date(document.getElementById('baslangicSaati').value).toISOString(),
+        bitis_saati: new Date(document.getElementById('bitisSaati').value).toISOString(),
+        notlar: document.getElementById('notlar').value
+    };
+    
+    let result;
+    if (currentAppointmentId) {
+        result = await apiRequest(`/appointments/${currentAppointmentId}`, {
+            method: 'PUT',
+            body: JSON.stringify(formData)
+        });
+    } else {
+        result = await apiRequest('/appointments', {
+            method: 'POST',
+            body: JSON.stringify(formData)
+        });
+    }
+    
+    if (result && result.success) {
+        currentModal.hide();
+        updateCalendar();
+        alert('✅ Randevu kaydedildi');
+    } else {
+        alert('❌ Hata: ' + (result?.message || 'Kaydedilemedi'));
+    }
+});
+
+// Delete
+async function deleteAppointment() {
+    if (!currentAppointmentId) return;
+    
+    if (confirm('Bu randevuyu silmek istediğinizden emin misiniz?')) {
+        const result = await apiRequest(`/appointments/${currentAppointmentId}`, {
+            method: 'DELETE'
+        });
+        
+        if (result && result.success) {
+            currentModal.hide();
+            updateCalendar();
+            alert('✅ Randevu silindi');
+        } else {
+            alert('❌ Hata: ' + (result?.message || 'Silinemedi'));
+        }
+    }
+}
+
+// Takvimi güncelle
+async function updateCalendar() {
+    document.getElementById('currentDate').textContent = formatDate(currentDate);
+    await loadAppointments();
+    renderTimeline();
+}
+
+// Sayfa yüklendiğinde
+(async function init() {
+    await loadUzmanlar();
+    renderMiniCalendar();
+    await updateCalendar();
+})();
+    </script>
 </body>
 </html>
