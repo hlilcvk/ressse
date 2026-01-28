@@ -16,6 +16,7 @@
         body {
             background: #f8f9fa;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            overflow-x: hidden;
         }
 
         .header {
@@ -25,6 +26,9 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
         .header h1 {
@@ -32,6 +36,28 @@
             font-weight: 600;
             color: #1a1a1a;
             margin: 0;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn-uzmanlar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-uzmanlar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
         .user-info {
@@ -57,6 +83,7 @@
             border-radius: 16px;
             padding: 2rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            position: relative;
         }
 
         .calendar-header {
@@ -90,14 +117,24 @@
             background: #e9ecef;
         }
 
+        .timeline-container {
+            position: relative;
+            overflow-x: auto;
+        }
+
         .timeline-grid {
             display: grid;
             grid-template-columns: 80px 1fr;
             gap: 0;
+            position: relative;
         }
 
         .time-labels {
-            padding-top: 20px;
+            padding-top: 60px;
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 10;
         }
 
         .time-label {
@@ -105,7 +142,8 @@
             display: flex;
             align-items: flex-start;
             font-size: 0.85rem;
-            color: #868e96;
+            color: #495057;
+            font-weight: 500;
             padding-right: 1rem;
         }
 
@@ -115,23 +153,35 @@
             position: relative;
         }
 
-        .uzman-column {
-            min-height: 960px;
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 1rem;
-            position: relative;
+        /* Sticky uzman başlıkları */
+        .uzman-headers {
+            position: sticky;
+            top: 73px;
+            background: white;
+            z-index: 20;
+            display: grid;
+            gap: 1rem;
+            padding-bottom: 1rem;
+            margin-bottom: 0;
         }
 
         .uzman-header {
             font-weight: 600;
             font-size: 0.95rem;
-            margin-bottom: 1rem;
             color: #495057;
             text-align: center;
-            padding: 0.5rem;
-            background: white;
+            padding: 0.75rem;
+            background: #f8f9fa;
             border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+
+        .uzman-column {
+            min-height: 960px;
+            background: #fafbfc;
+            border-radius: 12px;
+            padding: 0;
+            position: relative;
         }
 
         .time-grid {
@@ -139,55 +189,118 @@
             height: 960px;
         }
 
+        /* Geliştirilmiş saat çizgileri */
         .time-slot {
             position: absolute;
             left: 0;
             right: 0;
             height: 80px;
-            border-bottom: 1px solid #e9ecef;
+            border-bottom: 2px dashed #dee2e6;
         }
 
+        .time-slot.half-hour {
+            height: 40px;
+            border-bottom: 1px dashed #e9ecef;
+        }
+
+        /* Şimdiki zaman çizgisi */
+        .current-time-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #dc3545;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        .current-time-line::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: -4px;
+            width: 12px;
+            height: 12px;
+            background: #dc3545;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        /* Geliştirilmiş randevu kartı */
         .appointment-card {
             position: absolute;
-            left: 4px;
-            right: 4px;
-            padding: 0.75rem;
+            left: 8px;
+            right: 8px;
+            padding: 0.85rem;
             border-radius: 10px;
             cursor: move;
             transition: all 0.2s;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            border-left: 4px solid rgba(0,0,0,0.2);
+            display: flex;
+            gap: 0.75rem;
         }
 
         .appointment-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.18);
         }
 
-        .appointment-card.color-1 { background: linear-gradient(135deg, #a8e6cf 0%, #dcedc1 100%); }
-        .appointment-card.color-2 { background: linear-gradient(135deg, #c7b3e5 0%, #e5c1e1 100%); }
-        .appointment-card.color-3 { background: linear-gradient(135deg, #ffd3b6 0%, #ffaaa5 100%); }
-        .appointment-card.color-4 { background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%); }
-        .appointment-card.color-5 { background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%); }
+        .appointment-card.dragging {
+            opacity: 0.7;
+            transform: rotate(2deg);
+            z-index: 50;
+        }
+
+        .appointment-time-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #2c3e50;
+            min-width: 45px;
+            text-align: left;
+            padding-top: 2px;
+        }
+
+        .appointment-content {
+            flex: 1;
+        }
 
         .appointment-title {
-            font-weight: 600;
-            font-size: 0.95rem;
+            font-weight: 700;
+            font-size: 1rem;
             margin-bottom: 0.25rem;
-            color: #2c3e50;
+            color: #1a1a1a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .appointment-details {
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: #5a6c7d;
+            font-style: italic;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.35rem;
         }
 
-        .appointment-time {
-            font-size: 0.75rem;
-            color: #7f8c8d;
-            margin-top: 0.25rem;
+        .appointment-card.color-1 { background: linear-gradient(135deg, #a8e6cf 0%, #dcedc1 100%); border-left-color: #6ba368; }
+        .appointment-card.color-2 { background: linear-gradient(135deg, #c7b3e5 0%, #e5c1e1 100%); border-left-color: #8b5fbf; }
+        .appointment-card.color-3 { background: linear-gradient(135deg, #ffd3b6 0%, #ffaaa5 100%); border-left-color: #d97373; }
+        .appointment-card.color-4 { background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%); border-left-color: #4a9fc2; }
+        .appointment-card.color-5 { background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%); border-left-color: #d4c34a; }
+
+        /* Drag tooltip */
+        .drag-tooltip {
+            position: fixed;
+            background: #2c3e50;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
         .sidebar {
@@ -321,7 +434,7 @@
             background: #f8f9fa;
         }
 
-        /* Modal Styles */
+        /* Modal */
         .modal-content {
             border-radius: 16px;
             border: none;
@@ -375,30 +488,30 @@
             .main-layout {
                 grid-template-columns: 1fr;
             }
-
-            .sidebar {
-                grid-template-columns: repeat(2, 1fr);
-            }
         }
     </style>
 </head>
 <body>
     <div class="header">
         <h1><i class="bi bi-calendar-event"></i> Randevu Yönetim</h1>
-        <div class="user-info">
-            <span id="userName" style="font-weight: 600;"></span>
-            <button class="btn-logout" onclick="doLogout()">
-                <i class="bi bi-box-arrow-right"></i> Çıkış
+        <div class="header-nav">
+            <button class="btn-uzmanlar" onclick="window.location.href='uzmanlar.html'">
+                <i class="bi bi-people"></i> Uzmanlarım
             </button>
+            <div class="user-info">
+                <span id="userName" style="font-weight: 600;"></span>
+                <button class="btn-logout" onclick="doLogout()">
+                    <i class="bi bi-box-arrow-right"></i> Çıkış
+                </button>
+            </div>
         </div>
     </div>
 
     <div class="container-fluid">
         <div class="main-layout">
-            <!-- Sol: Ana Takvim -->
             <div class="calendar-section">
                 <div class="calendar-header">
-                    <div class="calendar-date" id="currentDate">Wednesday, July 2, 2025</div>
+                    <div class="calendar-date" id="currentDate">Loading...</div>
                     <div class="date-nav">
                         <button onclick="changeDate(-1)"><i class="bi bi-chevron-left"></i></button>
                         <button onclick="changeDate(0)">Bugün</button>
@@ -406,12 +519,11 @@
                     </div>
                 </div>
 
-                <div id="timelineContainer">
-                    <!-- Buraya timeline grid gelecek -->
+                <div class="timeline-container">
+                    <div id="timelineGrid"></div>
                 </div>
             </div>
 
-            <!-- Sağ: Mini Calendar + Actions -->
             <div class="sidebar">
                 <div class="action-card">
                     <button class="add-appointment-btn" onclick="openAddModal()">
@@ -424,14 +536,12 @@
                         <button style="background: none; border: none; cursor: pointer;" onclick="changeMiniMonth(-1)">
                             <i class="bi bi-chevron-left"></i>
                         </button>
-                        <div class="mini-calendar-title" id="miniCalendarTitle">July 2025</div>
+                        <div class="mini-calendar-title" id="miniCalendarTitle">Loading...</div>
                         <button style="background: none; border: none; cursor: pointer;" onclick="changeMiniMonth(1)">
                             <i class="bi bi-chevron-right"></i>
                         </button>
                     </div>
-                    <div class="mini-calendar-grid" id="miniCalendarGrid">
-                        <!-- Mini calendar buraya gelecek -->
-                    </div>
+                    <div class="mini-calendar-grid" id="miniCalendarGrid"></div>
                 </div>
 
                 <div class="action-card">
@@ -450,6 +560,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Drag Tooltip -->
+    <div id="dragTooltip" class="drag-tooltip" style="display: none;"></div>
 
     <!-- Randevu Modal -->
     <div class="modal fade" id="appointmentModal" tabindex="-1">
@@ -474,7 +587,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">İşlem Türü</label>
-                                <input type="text" class="form-control" id="islemTuru">
+                                <input type="text" class="form-control" id="islemTuru" placeholder="Örn: Saç Kesimi">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Uzman/Oda *</label>
@@ -510,415 +623,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-const API_URL = '/api';
-let currentDate = new Date();
-let uzmanlar = [];
-let appointments = [];
-let currentModal = null;
-let currentAppointmentId = null;
-let draggedElement = null;
-
-// Auth check
-const token = localStorage.getItem('auth_token');
-const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
-
-if (!token) {
-    window.location.href = '/login.html';
-}
-
-if (userData.is_super_admin) {
-    window.location.href = '/admin.html';
-}
-
-document.getElementById('userName').textContent = userData.ad_soyad || userData.kullanici_adi;
-
-function doLogout() {
-    localStorage.clear();
-    window.location.href = '/login.html';
-}
-
-// API helper
-async function apiRequest(endpoint, options = {}) {
-    try {
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-                ...options.headers
-            }
-        });
-
-        if (response.status === 401 || response.status === 403) {
-            alert('Oturum süreniz doldu');
-            doLogout();
-            return;
-        }
-
-        return response.json();
-    } catch (error) {
-        console.error('API Error:', error);
-        return { success: false, message: error.message };
-    }
-}
-
-// Tarih formatları
-function formatDate(date) {
-    const days = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
-    const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
-    
-    return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
-}
-
-function formatDateTimeLocal(date) {
-    const d = new Date(date);
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 16);
-}
-
-// Tarih değiştir
-function changeDate(delta) {
-    if (delta === 0) {
-        currentDate = new Date();
-    } else {
-        currentDate.setDate(currentDate.getDate() + delta);
-    }
-    updateCalendar();
-}
-
-// Mini calendar
-let miniCalendarDate = new Date();
-
-function changeMiniMonth(delta) {
-    miniCalendarDate.setMonth(miniCalendarDate.getMonth() + delta);
-    renderMiniCalendar();
-}
-
-function renderMiniCalendar() {
-    const year = miniCalendarDate.getFullYear();
-    const month = miniCalendarDate.getMonth();
-    
-    const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
-    document.getElementById('miniCalendarTitle').textContent = `${months[month]} ${year}`;
-    
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDay = firstDay.getDay();
-    const daysInMonth = lastDay.getDate();
-    
-    const grid = document.getElementById('miniCalendarGrid');
-    grid.innerHTML = '';
-    
-    const dayHeaders = ['P', 'Pt', 'S', 'Ç', 'P', 'C', 'Ct'];
-    dayHeaders.forEach(day => {
-        const header = document.createElement('div');
-        header.className = 'mini-calendar-day-header';
-        header.textContent = day;
-        grid.appendChild(header);
-    });
-    
-    for (let i = 0; i < startDay; i++) {
-        const empty = document.createElement('div');
-        empty.className = 'mini-calendar-day other-month';
-        grid.appendChild(empty);
-    }
-    
-    const today = new Date();
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dayEl = document.createElement('div');
-        dayEl.className = 'mini-calendar-day';
-        dayEl.textContent = day;
-        
-        const date = new Date(year, month, day);
-        if (date.toDateString() === today.toDateString()) {
-            dayEl.classList.add('today');
-        }
-        
-        dayEl.onclick = () => {
-            currentDate = new Date(year, month, day);
-            updateCalendar();
-        };
-        
-        grid.appendChild(dayEl);
-    }
-}
-
-async function loadUzmanlar() {
-    const data = await apiRequest('/appointments/uzmanlar');
-    if (data && data.success) {
-        uzmanlar = data.data;
-        
-        const select = document.getElementById('uzman');
-        select.innerHTML = '<option value="">Seçiniz...</option>';
-        uzmanlar.forEach(u => {
-            select.innerHTML += `<option value="${u.oda_adi}">${u.oda_adi}</option>`;
-        });
-        
-        document.getElementById('statUzman').textContent = uzmanlar.length;
-    }
-}
-
-async function loadAppointments() {
-    const start = new Date(currentDate);
-    start.setHours(0, 0, 0, 0);
-    
-    const end = new Date(currentDate);
-    end.setHours(23, 59, 59, 999);
-    
-    const data = await apiRequest(`/appointments?start=${start.toISOString()}&end=${end.toISOString()}`);
-    
-    if (data && data.success) {
-        appointments = data.data;
-        document.getElementById('statTotal').textContent = appointments.length;
-    } else {
-        appointments = [];
-        document.getElementById('statTotal').textContent = 0;
-    }
-}
-
-function renderTimeline() {
-    const container = document.getElementById('timelineContainer');
-    
-    const hours = [];
-    for (let h = 8; h <= 20; h++) {
-        hours.push(`${h.toString().padStart(2, '0')}:00`);
-    }
-    
-    let html = '<div class="timeline-grid">';
-    html += '<div class="time-labels">';
-    hours.forEach(hour => {
-        html += `<div class="time-label">${hour}</div>`;
-    });
-    html += '</div>';
-    
-    html += '<div class="appointments-container" style="grid-template-columns: repeat(' + (uzmanlar.length || 1) + ', 1fr);">';
-    
-    if (uzmanlar.length === 0) {
-        html += '<div class="uzman-column"><div class="text-center text-muted mt-5">Uzman bulunamadı</div></div>';
-    } else {
-        uzmanlar.forEach((uzman) => {
-            html += `
-                <div class="uzman-column">
-                    <div class="uzman-header">${uzman.oda_adi}</div>
-                    <div class="time-grid" data-uzman="${uzman.oda_adi}">
-                        ${hours.map((_, i) => `<div class="time-slot" style="top: ${i * 80}px;" data-hour="${8 + i}"></div>`).join('')}
-                    </div>
-                </div>
-            `;
-        });
-    }
-    
-    html += '</div></div>';
-    container.innerHTML = html;
-    
-    renderAppointments();
-    
-    document.querySelectorAll('.time-slot').forEach(slot => {
-        slot.onclick = (e) => {
-            const uzman = e.target.closest('.time-grid').dataset.uzman;
-            const hour = parseInt(e.target.dataset.hour);
-            
-            const start = new Date(currentDate);
-            start.setHours(hour, 0, 0, 0);
-            
-            const end = new Date(start);
-            end.setHours(hour + 1, 0, 0, 0);
-            
-            openAddModal(uzman, start, end);
-        };
-    });
-}
-
-function renderAppointments() {
-    appointments.forEach((apt, index) => {
-        const grid = document.querySelector(`.time-grid[data-uzman="${apt.uzman}"]`);
-        if (!grid) return;
-        
-        const start = new Date(apt.baslangic_saati);
-        const end = new Date(apt.bitis_saati);
-        
-        const startMinutes = start.getHours() * 60 + start.getMinutes();
-        const endMinutes = end.getHours() * 60 + end.getMinutes();
-        const duration = endMinutes - startMinutes;
-        
-        const top = ((startMinutes - 480) / 60) * 80;
-        const height = (duration / 60) * 80;
-        
-        const colorClass = `color-${(index % 5) + 1}`;
-        
-        const card = document.createElement('div');
-        card.className = `appointment-card ${colorClass}`;
-        card.style.top = `${top}px`;
-        card.style.height = `${height}px`;
-        card.draggable = true;
-        card.dataset.id = apt.id;
-        
-        card.innerHTML = `
-            <div class="appointment-title">${apt.musteri_adi}</div>
-            <div class="appointment-details">
-                <i class="bi bi-scissors"></i>
-                ${apt.islem_turu || 'İşlem belirtilmemiş'}
-            </div>
-            <div class="appointment-time">
-                ${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} - 
-                ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}
-            </div>
-        `;
-        
-        card.onclick = (e) => {
-            e.stopPropagation();
-            openEditModal(apt);
-        };
-        
-        card.ondragstart = (e) => {
-            draggedElement = { apt, card };
-            e.dataTransfer.effectAllowed = 'move';
-        };
-        
-        grid.appendChild(card);
-    });
-    
-    document.querySelectorAll('.time-grid').forEach(grid => {
-        grid.ondragover = (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-        };
-        
-        grid.ondrop = async (e) => {
-            e.preventDefault();
-            if (!draggedElement) return;
-            
-            const rect = grid.getBoundingClientRect();
-            const y = e.clientY - rect.top;
-            const hour = Math.floor((y / 80)) + 8;
-            const minutes = Math.round(((y % 80) / 80) * 60);
-            
-            const newStart = new Date(currentDate);
-            newStart.setHours(hour, minutes, 0, 0);
-            
-            const duration = new Date(draggedElement.apt.bitis_saati) - new Date(draggedElement.apt.baslangic_saati);
-            const newEnd = new Date(newStart.getTime() + duration);
-            
-            const newUzman = grid.dataset.uzman;
-            
-            const result = await apiRequest(`/appointments/${draggedElement.apt.id}`, {
-                method: 'PUT',
-                body: JSON.stringify({
-                    ...draggedElement.apt,
-                    uzman: newUzman,
-                    baslangic_saati: newStart.toISOString(),
-                    bitis_saati: newEnd.toISOString()
-                })
-            });
-            
-            if (result && result.success) {
-                updateCalendar();
-            }
-            
-            draggedElement = null;
-        };
-    });
-}
-
-function openAddModal(uzman = '', start = null, end = null) {
-    currentModal = new bootstrap.Modal(document.getElementById('appointmentModal'));
-    const form = document.getElementById('appointmentForm');
-    
-    form.reset();
-    currentAppointmentId = null;
-    document.getElementById('deleteBtn').style.display = 'none';
-    document.getElementById('modalTitle').textContent = 'Yeni Randevu';
-    
-    if (uzman) document.getElementById('uzman').value = uzman;
-    if (start) document.getElementById('baslangicSaati').value = formatDateTimeLocal(start);
-    if (end) document.getElementById('bitisSaati').value = formatDateTimeLocal(end);
-    
-    currentModal.show();
-}
-
-function openEditModal(apt) {
-    currentModal = new bootstrap.Modal(document.getElementById('appointmentModal'));
-    currentAppointmentId = apt.id;
-    
-    document.getElementById('modalTitle').textContent = 'Randevu Düzenle';
-    document.getElementById('deleteBtn').style.display = 'block';
-    
-    document.getElementById('musteriAdi').value = apt.musteri_adi;
-    document.getElementById('telefonNo').value = apt.telefon_no || '';
-    document.getElementById('islemTuru').value = apt.islem_turu || '';
-    document.getElementById('uzman').value = apt.uzman;
-    document.getElementById('baslangicSaati').value = formatDateTimeLocal(apt.baslangic_saati);
-    document.getElementById('bitisSaati').value = formatDateTimeLocal(apt.bitis_saati);
-    document.getElementById('notlar').value = apt.notlar || '';
-    
-    currentModal.show();
-}
-
-document.getElementById('appointmentForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const formData = {
-        musteri_adi: document.getElementById('musteriAdi').value,
-        telefon_no: document.getElementById('telefonNo').value,
-        islem_turu: document.getElementById('islemTuru').value,
-        uzman: document.getElementById('uzman').value,
-        baslangic_saati: new Date(document.getElementById('baslangicSaati').value).toISOString(),
-        bitis_saati: new Date(document.getElementById('bitisSaati').value).toISOString(),
-        notlar: document.getElementById('notlar').value
-    };
-    
-    let result;
-    if (currentAppointmentId) {
-        result = await apiRequest(`/appointments/${currentAppointmentId}`, {
-            method: 'PUT',
-            body: JSON.stringify(formData)
-        });
-    } else {
-        result = await apiRequest('/appointments', {
-            method: 'POST',
-            body: JSON.stringify(formData)
-        });
-    }
-    
-    if (result && result.success) {
-        currentModal.hide();
-        updateCalendar();
-        alert('✅ Randevu kaydedildi');
-    } else {
-        alert('❌ Hata: ' + (result?.message || 'Kaydedilemedi'));
-    }
-});
-
-async function deleteAppointment() {
-    if (!currentAppointmentId) return;
-    
-    if (confirm('Bu randevuyu silmek istediğinizden emin misiniz?')) {
-        const result = await apiRequest(`/appointments/${currentAppointmentId}`, {
-            method: 'DELETE'
-        });
-        
-        if (result && result.success) {
-            currentModal.hide();
-            updateCalendar();
-            alert('✅ Randevu silindi');
-        } else {
-            alert('❌ Hata: ' + (result?.message || 'Silinemedi'));
-        }
-    }
-}
-
-async function updateCalendar() {
-    document.getElementById('currentDate').textContent = formatDate(currentDate);
-    await loadAppointments();
-    renderTimeline();
-}
-
-(async function init() {
-    await loadUzmanlar();
-    renderMiniCalendar();
-    await updateCalendar();
-})();
-    </script>
+    <script src="js/dashboard-v2.js"></script>
 </body>
 </html>
