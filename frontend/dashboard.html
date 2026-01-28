@@ -132,6 +132,15 @@
             position: relative;
         }
 
+        .time-labels-header {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.5rem;
+            padding: 0.75rem 0;
+        }
+
         .time-labels {
             padding-top: 0;
         }
@@ -883,6 +892,7 @@ function renderTimeline() {
         <div class="timeline-container">
             <!-- Sol: Saatler -->
             <div class="time-labels-container">
+                <div class="time-labels-header"></div>
                 <div class="time-labels">
                     ${hours.map(h => `<div class="time-label">${formatTime(h, 0)}</div>`).join('')}
                 </div>
