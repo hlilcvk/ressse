@@ -35,7 +35,7 @@ router.post('/isletme', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    const { isletme_id, kullanici_adi, ad_soyad, sifre, bagli_tablo_adi, uzmanlar } = req.body;
+    const { isletme_id, kullanici_adi, ad_soyad, sifre, bagli_tablo_adi } = req.body;
 
     // Şifre hash
     const hashedPassword = await bcrypt.hash(sifre, 10);
@@ -65,16 +65,6 @@ router.post('/isletme', async (req, res) => {
       CREATE INDEX idx_${bagli_tablo_adi}_tarih ON ${bagli_tablo_adi}(baslangic_saati)
     `);
 
-    // 3. Uzmanları ekle
-    if (uzmanlar && uzmanlar.length > 0) {
-      for (const uzman of uzmanlar) {
-        await client.query(
-          'INSERT INTO calisma_odalari (isletme_id, oda_adi) VALUES ($1, $2)',
-          [isletme_id, uzman.trim()]
-        );
-      }
-    }
-
     await client.query('COMMIT');
     res.json({ success: true, message: 'İşletme oluşturuldu' });
   } catch (err) {
@@ -93,7 +83,7 @@ router.put('/isletme/:id', async (req, res) => {
     await client.query('BEGIN');
 
     const { id } = req.params;
-    const { isletme_id, kullanici_adi, ad_soyad, sifre, bagli_tablo_adi, uzmanlar } = req.body;
+    const { isletme_id, kullanici_adi, ad_soyad, sifre, bagli_tablo_adi } = req.body;
 
     // 1. İşletme bilgilerini güncelle
     let updateQuery = `
@@ -113,19 +103,6 @@ router.put('/isletme/:id', async (req, res) => {
     }
 
     await client.query(updateQuery, params);
-
-    // 2. Mevcut uzmanları sil
-    await client.query(`DELETE FROM calisma_odalari WHERE isletme_id = $1`, [isletme_id]);
-
-    // 3. Yeni uzmanları ekle
-    if (uzmanlar && uzmanlar.length > 0) {
-      for (const oda of uzmanlar) {
-        await client.query(`
-          INSERT INTO calisma_odalari (isletme_id, oda_adi)
-          VALUES ($1, $2)
-        `, [isletme_id, oda]);
-      }
-    }
 
     await client.query('COMMIT');
     res.json({ success: true, message: 'İşletme güncellendi' });
