@@ -152,11 +152,6 @@
             overflow-x: auto;
         }
 
-        .calendar-grid {
-            display: grid;
-            min-width: 600px;
-        }
-
         /* Sticky uzman başlıkları */
         .uzman-headers {
             position: sticky;
@@ -902,27 +897,25 @@ function renderTimeline() {
                 </div>
             </div>
             
-            <!-- Sağ: Uzmanlar -->
+            <!-- Sağ: Uzmanlar + Grid -->
             <div class="calendar-grid-wrapper">
-                <div class="calendar-grid" style="grid-template-columns: ${gridCols};">
-                    <!-- Sticky headers -->
-                    <div class="uzman-headers" style="grid-template-columns: ${gridCols};">
-                        ${uzmanlar.map(u => `<div class="uzman-header">${u.oda_adi}</div>`).join('')}
-                    </div>
-                    
-                    <!-- Uzman kolonları -->
-                    <div class="uzman-columns" style="grid-template-columns: ${gridCols};">
-                        ${uzmanlar.map(uzman => `
-                            <div class="uzman-column">
-                                <div class="time-grid" data-uzman="${uzman.oda_adi}">
-                                    ${hours.map((h, i) => `
-                                        <div class="time-slot" style="top: ${i * 80}px;" data-hour="${h}" data-minute="0"></div>
-                                        <div class="time-slot half-hour" style="top: ${i * 80 + 40}px;" data-hour="${h}" data-minute="30"></div>
-                                    `).join('')}
-                                </div>
+                <!-- Sticky headers -->
+                <div class="uzman-headers" style="grid-template-columns: ${gridCols};">
+                    ${uzmanlar.map(u => `<div class="uzman-header">${u.oda_adi}</div>`).join('')}
+                </div>
+                
+                <!-- Uzman kolonları -->
+                <div class="uzman-columns" style="grid-template-columns: ${gridCols};">
+                    ${uzmanlar.map(uzman => `
+                        <div class="uzman-column">
+                            <div class="time-grid" data-uzman="${uzman.oda_adi}">
+                                ${hours.map((h, i) => `
+                                    <div class="time-slot" style="top: ${i * 80}px;" data-hour="${h}" data-minute="0"></div>
+                                    <div class="time-slot half-hour" style="top: ${i * 80 + 40}px;" data-hour="${h}" data-minute="30"></div>
+                                `).join('')}
                             </div>
-                        `).join('')}
-                    </div>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
         </div>
